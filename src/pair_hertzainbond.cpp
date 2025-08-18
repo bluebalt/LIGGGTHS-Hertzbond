@@ -72,7 +72,7 @@ void PairHertzianBond::coeff(int narg, char **arg) {
     }
     
     cutforce = cut_global;
-    
+
     for (int i = 1; i <= atom->ntypes; ++i)
         for (int j = 1; j <= atom->ntypes; ++j) {
             setflag[i][j] = 1;
@@ -101,8 +101,8 @@ void PairHertzianBond::compute(int eflag, int vflag) {
     double **v = atom->v;
     double **omega = atom->omega;
     double *radius = atom->radius;
-    double *mass   = atom->mass;
-    int *type = atom->type;
+    double *rmass   = atom->rmass;
+    // int *type = atom->type;
     int nlocal = atom->nlocal;
 
     double E_eff = youngModulus / (2.0 * (1 - poissonRatio * poissonRatio));
@@ -118,9 +118,11 @@ void PairHertzianBond::compute(int eflag, int vflag) {
         int jnum   = list->numneigh[i];
 
         for (int jj = 0; jj < jnum; ++jj) {
-            int j = jlist[jj];
-            if (j >= nlocal) continue;   // 고스트 원자 무시
-            if (j <= i) continue;        // 각 쌍을 한 번만 처리
+            // int j = jlist[jj];
+            // if (j >= nlocal) continue;   // 고스트 원자 무시
+            // if (j <= i) continue;        // 각 쌍을 한 번만 처리
+            int j = jlist[jj] & NEIGHMASK; //코덱스 추가
+            bool jlocal = (j < nlocal);    //코덱스 추가
 
             double xj = x[j][0], yj = x[j][1], zj = x[j][2];
             double rj = radius[j];
@@ -176,8 +178,8 @@ void PairHertzianBond::compute(int eflag, int vflag) {
                 double Reff = (ri * rj) / (ri + rj);
                 double kn = (4.0/3.0) * E_eff * sqrt(Reff);
                 double Fn_contact = kn * pow(overlap, 1.5);
-                double meff = (mass[type[i]] * mass[type[j]]) /
-                              (mass[type[i]] + mass[type[j]]);
+                double meff = (rmass[i] * rmass[j]) /
+                              (rmass[i] + rmass[j]);
                 double kn_linear = (overlap > 0.0 ? 1.5 * kn * sqrt(overlap) : kn);
                 double Cn = 2.0 * dampingRatio * sqrt(meff * kn_linear);
                 double vn = (v[j][0]-v[i][0])*nx + (v[j][1]-v[i][1])*ny + (v[j][2]-v[i][2])*nz;
@@ -281,12 +283,14 @@ void PairHertzianBond::compute(int eflag, int vflag) {
             atom->torque[i][1] += torque_i[1];
             atom->torque[i][2] += torque_i[2];
 
-            atom->f[j][0] += force_j[0];
-            atom->f[j][1] += force_j[1];
-            atom->f[j][2] += force_j[2];
-            atom->torque[j][0] += torque_j[0];
-            atom->torque[j][1] += torque_j[1];
-            atom->torque[j][2] += torque_j[2];
+             if (jlocal) {
+                atom->f[j][0] += force_j[0];
+                atom->f[j][1] += force_j[1];
+                atom->f[j][2] += force_j[2];
+                atom->torque[j][0] += torque_j[0];
+                atom->torque[j][1] += torque_j[1];
+                atom->torque[j][2] += torque_j[2];
+             }
         }
     }
 }

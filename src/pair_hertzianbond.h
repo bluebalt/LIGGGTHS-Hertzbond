@@ -1,5 +1,5 @@
 #ifdef PAIR_CLASS
-PairStyle(hertzianbond, PairHertzianBond)
+PairStyle(gran/hertzianbond, PairHertzianBond)
 #else
 
 #ifndef LMP_PAIR_HERTZIANBOND_H

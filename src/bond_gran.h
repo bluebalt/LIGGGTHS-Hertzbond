@@ -34,27 +34,33 @@ BondStyle(gran,BondGran)
 namespace LAMMPS_NS {
 
 class BondGran : public Bond {
- public:
-  BondGran(class LAMMPS *);
-  ~BondGran();
-  void init_style();
-  void compute(int, int);
-  void coeff(int, char **);
-  double equilibrium_distance(int);
-  void write_restart(FILE *);
-  void read_restart(FILE *);
-  //double single(int, double, int, int);
-  double single(int, double, int, int, double &);
+   public:
+      BondGran(class LAMMPS *);
+      ~BondGran();
+      void init_style();
+      void compute(int, int);
+      void coeff(int, char **);
+      double equilibrium_distance(int);
+      void write_restart(FILE *);
+      void read_restart(FILE *);
+      double single(int, double, int, int, double &);
+      double getMinDt(); // Used to calculate the critical time step
 
- protected:
-  int breakmode;
-  double *rb,*Sn,*St;
-  double *r_break,*sigman_break,*tau_break,*T_break;
-  void allocate();
-  //double dirvec[2][3]; P.F.
+   protected:
+      int dampmode;
+      int breakmode;
+      int damagemode;
+      double *Sn,*St;
+      double *r_break,*sigma_break,*tau_break,*T_break;
 
-  class FixPropertyAtom *fix_Temp;
-  double *Temp;
+      // Added by Matt Schramm, Iowa State University
+      double *damp, *beta0, *beta1; // dampening coeffinient
+      double *ro, *ri; // Outside and Inside bond radius scale
+
+      void allocate();
+
+      class FixPropertyAtom *fix_Temp;
+      double *Temp;
 
 };
 

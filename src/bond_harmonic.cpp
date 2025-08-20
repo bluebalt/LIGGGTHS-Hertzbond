@@ -228,3 +228,27 @@ double BondHarmonic::single(int type, double rsq, int i, int j,
   if (r > 0.0) fforce = -2.0*rk/r;
   return rk*dr;
 }
+
+double BondHarmonic::getMinDt()
+{
+  int nbondlist = neighbor->nbondlist;
+  int **bondlist = neighbor->bondlist;
+
+  double minDtSq = 1.0;
+  double *radius = atom->radius;
+  double *density = atom->density;
+
+  for (int i = 0; i < nbondlist; i++) {
+    if (bondlist[i][3]) continue;
+    int i1 = bondlist[i][0];
+    int i2 = bondlist[i][1];
+    int type = bondlist[i][2];
+
+    double m1 = 4.1887902047863909846168578443*density[i1]*radius[i1]*radius[i1]*radius[i1];
+    double m2 = 4.1887902047863909846168578443*density[i2]*radius[i2]*radius[i2]*radius[i2];
+    double m = MIN(m1,m2);
+    double curDtSq = m/k[type];
+    if (curDtSq < minDtSq) minDtSq = curDtSq;
+  }
+  return sqrt(0.5*minDtSq);
+}

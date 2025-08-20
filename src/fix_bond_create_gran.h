@@ -62,14 +62,18 @@ class FixBondCreateGran : public Fix {
   double memory_usage();
 
  private:
+  bool proc_shift = 1;
   bool already_bonded(int,int);
 
+  bool doNorm;
   int me;
   int iatomtype,jatomtype;
-  int btype,seed;
+  int btype;
   int imaxbond,jmaxbond;
   int inewtype,jnewtype;
   double cutsq,fraction;
+
+  const char *seed;
 
   int createcount,createcounttotal;   // bond formation stats
 

@@ -1,0 +1,50 @@
+"LIGGGHTS(R)-PUBLIC WWW Site"_liws - "LIGGGHTS(R)-PUBLIC Documentation"_ld - "LIGGGHTS(R)-PUBLIC Commands"_lc :c
+
+:link(liws,http://www.cfdem.com)
+:link(ld,Manual.html)
+:link(lc,Section_commands.html#comm)
+
+:line
+
+bond_style gran command :h3
+
+[Syntax:]
+
+bond_style gran :pre
+
+[Examples:]
+
+bond_coeff 1 1.0 0.0 1.5e9 1.0e9 1 1.0 0 0.01 :pre
+bond_coeff 1 1.0 0.0 1.5e9 1.0e9 1 1.0 1 1.5e6 1.0e6 :pre
+bond_coeff 1 1.0 0.0 1.5e9 1.0e9 1 1.0 2 1.5e6 1.0e6 330.0 :pre
+bond_coeff 1 1.0 0.0 1.5e9 1.0e9 2 0.1 1.0 0.5 1 1.5e6 1.0e6 :pre
+
+[Description:]
+
+The {gran} model currently utilizes two differnt damping styles, one inspired by 
+Yu Guo et al (2013) and slightly modified by Schramm et al (2019)(damp style 1)
+
+:c,image(Eqs/bond_harmonic.jpg)
+
+where r0 is the equilibrium bond distance.  Note that the usual 1/2
+factor is included in K.
+
+The following coefficients must be defined for each bond type via the
+"bond_coeff"_bond_coeff.html command as in the example above, or in
+the data file or restart files read by the "read_data"_read_data.html
+or "read_restart"_read_restart.html commands:
+
+K (energy/distance^2)
+r0 (distance) :ul
+
+[Restrictions:]
+
+This bond style can only be used if LIGGGHTS(R)-PUBLIC was built with the
+MOLECULAR package (which it is by default).  See the "Making
+LIGGGHTS(R)-PUBLIC"_Section_start.html#start_3 section for more info on packages.
+
+[Related commands:]
+
+"bond_coeff"_bond_coeff.html, "delete_bonds"_delete_bonds.html
+
+[Default:] none

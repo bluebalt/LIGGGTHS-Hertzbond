@@ -76,6 +76,7 @@ class BondHybrid : public Bond {
   void read_restart(FILE *);
   double single(int, double, int, int, double &);
   double memory_usage();
+  double getMinDt();
 
  private:
   int *map;                     // which style each bond type points to

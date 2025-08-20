@@ -1,0 +1,11 @@
+*.*
+*/post*
+!.gitignore
+!README.md
+!cleanAll.py
+!testAll.py
+!*/run/*
+!*/run.sh
+!*/truth.txt
+!*/run/meshes/*
+

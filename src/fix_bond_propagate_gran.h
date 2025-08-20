@@ -40,8 +40,10 @@ class FixBondPropagateGran : public Fix {
   void pre_exchange();
   void write_restart(FILE *);
   void restart(char *);
+  void post_run();
 
  private:
+  inline void neigh2atom();
   void remove_bond(int ilocal,int ibond, int bondnumber);
   //void remove_bond(int ilocal,int ibond);
   bigint laststep;

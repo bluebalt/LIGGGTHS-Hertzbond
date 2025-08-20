@@ -81,6 +81,7 @@ class FixInsertPack : public FixInsert {
   // region to be used for insertion
   class Region *ins_region;
   char *idregion;
+  int iregion;
   double region_volume,region_volume_local;
   int ntry_mc;
 
@@ -97,6 +98,13 @@ class FixInsertPack : public FixInsert {
 
   // warn if region extends outside box
   bool warn_region;
+
+  // use dense packing
+  bool use_dense_pack;
+
+  bool boundInsert;
+  int boundDirection;
+  double boundVal;
 
 };
 

@@ -19,6 +19,7 @@
    See the README file in the top-level directory.
 ------------------------------------------------------------------------- */
 
+#include "lmptype.h"
 #include "math.h"
 #include "mpi.h"
 #include "string.h"
@@ -77,6 +78,8 @@ FixBondCreateGran::FixBondCreateGran(LAMMPS *lmp, int narg, char **arg) :
   if (cutoff < 0.0) error->all(FLERR,"Illegal fix bond/create command");
   if (btype < 1 || btype > atom->nbondtypes)
     error->all(FLERR,"Invalid bond type in fix bond/create command");
+  
+  doNorm = false;
 
   cutsq = cutoff*cutoff;
 
@@ -87,7 +90,8 @@ FixBondCreateGran::FixBondCreateGran(LAMMPS *lmp, int narg, char **arg) :
   jmaxbond = 0;
   jnewtype = jatomtype;
   fraction = 1.0;
-  int seed = 12345;
+  
+  seed = "86028157";
 
   int iarg = 9;
   while (iarg < narg) {
@@ -110,11 +114,21 @@ FixBondCreateGran::FixBondCreateGran(LAMMPS *lmp, int narg, char **arg) :
     } else if (strcmp(arg[iarg],"prob") == 0) {
       if (iarg+3 > narg) error->all(FLERR,"Illegal fix bond/create command");
       fraction = atof(arg[iarg+1]);
-      seed = atoi(arg[iarg+2]);
+      seed = arg[iarg+2];
       if (fraction < 0.0 || fraction > 1.0)
         error->all(FLERR,"Illegal fix bond/create command");
-      if (seed <= 0) error->all(FLERR,"Illegal fix bond/create command");
+      if (atoi(seed) <= 0) error->all(FLERR,"Illegal fix bond/create command");
       iarg += 3;
+    } else if (strcmp(arg[iarg],"doNorm") == 0) {
+      if (iarg+2 > narg) error->all(FLERR,"Illegal fix bond/create command");
+      if (strcmp(arg[iarg+1],"yes") == 0) {
+        doNorm = true;
+      } else if (strcmp(arg[iarg+1],"no") == 0) {
+        doNorm = false;
+      } else {
+        error->all(FLERR,"Expected yes or no after doNorm");
+      }
+      iarg += 2;
     } else error->all(FLERR,"Illegal fix bond/create command");
   }
 
@@ -127,8 +141,7 @@ FixBondCreateGran::FixBondCreateGran(LAMMPS *lmp, int narg, char **arg) :
     error->all(FLERR,"Inconsistent iparam/jparam values in fix bond/create command");
 
   // initialize Marsaglia RNG with processor-unique seed
-
-  random = new RanMars(lmp,seed + me);
+  random = new RanMars(lmp,seed+comm->me,proc_shift,1);
 
   // perform initial allocation of atom-based arrays
   // register with Atom class
@@ -224,29 +237,14 @@ void FixBondCreateGran::init()
   if(!(force->bond_match("gran")))
      error->all(FLERR,"Fix bond/create can only be used together with dedicated 'granular' bond styles");
 
-  // check cutoff for iatomtype,jatomtype - cutneighsq is used here
-  double cutsq_limit = sqrt(force->pair->cutsq[iatomtype][jatomtype]) + neighbor->skin;
-  cutsq_limit *= cutsq_limit;
-  if (force->pair == NULL || cutsq > cutsq_limit)
-    error->all(FLERR,"Fix bond/create cutoff is longer than pairwise cutoff");
-/*
-  // require special bonds = 0,1,1
-
-  int flag = 0;
-  if (force->special_lj[1] != 0.0 || force->special_lj[2] != 1.0 ||
-      force->special_lj[3] != 1.0) flag = 1;
-  if (force->special_coul[1] != 0.0 || force->special_coul[2] != 1.0 ||
-      force->special_coul[3] != 1.0) flag = 1;
-  if (flag) error->all(FLERR,"Fix bond/create requires special_bonds = 0,1,1");
-
-  // warn if angles, dihedrals, impropers are being used
-
-  if (force->angle || force->dihedral || force->improper) {
-    if (me == 0)
-      error->warning(FLERR,"Created bonds will not create angles, "
-                     "dihedrals, or impropers");
+  // check cutoff for iatomtype,jatomtype - cutneighsq is used here only if doNorm is false
+  if (doNorm == false) {
+    double cutsq_limit = sqrt(force->pair->cutsq[iatomtype][jatomtype]) + neighbor->skin;
+    cutsq_limit *= cutsq_limit;
+    if (force->pair == NULL || cutsq > cutsq_limit)
+      error->all(FLERR,"Fix bond/create cutoff is longer than pairwise cutoff");
   }
-*/
+
   // need a half neighbor list, built when ever re-neighboring occurs
 
   int irequest = neighbor->request((void *) this);
@@ -315,9 +313,10 @@ void FixBondCreateGran::setup(int vflag)
 void FixBondCreateGran::post_integrate()
 {
   int i,j,k,m,ii,jj,inum,jnum,itype,jtype,n1,n3,possible;
-  double xtmp,ytmp,ztmp,delx,dely,delz,rsq,min,max;
+  double xtmp,ytmp,ztmp,delx,dely,delz,rsq,min,max,r1,r2;
   int *ilist,*jlist,*numneigh,**firstneigh,*slist;
   int flag;
+  bool skipBond;
 
   if (nevery == 0 || update->ntimestep % nevery ) return;
 
@@ -353,6 +352,7 @@ void FixBondCreateGran::post_integrate()
   // loop over neighbors of my atoms
   // each atom sets one closest eligible partner atom ID to bond with
 
+  double *radius = atom->radius;
   double **x = atom->x;
   int *tag = atom->tag;
   int *mask = atom->mask;
@@ -369,6 +369,7 @@ void FixBondCreateGran::post_integrate()
     i = ilist[ii];
     if (!(mask[i] & groupbit)) continue;
     itype = type[i];
+    r1 = radius[i];
     xtmp = x[i][0];
     ytmp = x[i][1];
     ztmp = x[i][2];
@@ -398,7 +399,15 @@ void FixBondCreateGran::post_integrate()
       dely = ytmp - x[j][1];
       delz = ztmp - x[j][2];
       rsq = delx*delx + dely*dely + delz*delz;
-      if (rsq >= cutsq) continue;
+      
+      if (doNorm) {
+        r2 = radius[j];
+        skipBond = (rsq/((r1+r2)*(r1+r2)) >= cutsq);
+
+      } else {
+        skipBond = (rsq >= cutsq);
+      }
+      if (skipBond) continue;
 
       if(already_bonded(i,j)) continue;
 
@@ -474,7 +483,7 @@ void FixBondCreateGran::post_integrate()
         }
 
         /*NL*///
-        fprintf(screen,"creating bond btw atoms %d and %d (i has now %d bonds) at step %d\n",i,j,num_bond[i]+1,update->ntimestep);
+        // fprintf(screen,"creating bond btw atoms %d and %d (i has now %d bonds) at step %d\n",i,j,num_bond[i]+1,update->ntimestep);
 
         // if newton_bond is set, only store with I or J
         // if not newton_bond, store bond with both I and J
@@ -516,10 +525,10 @@ void FixBondCreateGran::post_integrate()
   // tally stats
 
   MPI_Allreduce(&ncreate,&createcount,1,MPI_INT,MPI_SUM,world);
-  createcounttotal += createcount;
+  createcounttotal += createcount;  me;
   atom->nbonds += createcount;
 
-  /*NL*/ if(createcount && comm->me == 0) fprintf(screen,"Created %d bonds at timestep "BIGINT_FORMAT"\n",createcount,update->ntimestep);
+  /*NL*/ if(createcount && comm->me == 0) fprintf(screen,"Created %d bonds at timestep " BIGINT_FORMAT "\n",createcount,update->ntimestep);
 
   // trigger reneighboring if any bonds were formed
 

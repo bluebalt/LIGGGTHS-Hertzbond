@@ -1,4 +1,4 @@
-LIGGGHTS (Version LIGGGHTS-INL 4.0.0, compiled 2025-06-27-14:50:01 by shoot, git commit d69df361fc9b0a78ba09a50242bc76552d9bd71e)
+LIGGGHTS (Version LIGGGHTS-PUBLIC-FIBERS 3.8.0, compiled 2025-08-20-13:31:32 by shoot, git commit unknown)
 #Particle packing by insertion and successive growing of particles
 
 atom_style	granular
@@ -8,14 +8,13 @@ newton		off
 #echo		both
 
 communicate	single vel yes
-WARNING: Missing keyword mode in front of single or multi (../comm.cpp:327)
 
 units		si
 
 region		reg block -0.05 0.05 -0.05 0.05 0. 0.15 units box
 create_box	1 reg
 Created orthogonal box = (-0.05 -0.05 0) to (0.05 0.05 0.15)
-  1 by 1 by 2 MPI processor grid
+  1 by 2 by 2 MPI processor grid
 
 neighbor	0.002 bin
 neigh_modify	delay 0
@@ -30,79 +29,16 @@ fix 		m4 all property/global coefficientFriction peratomtypepair 1 0.5
 
 #New pair style
 pair_style gran model hertz tangential history #Hertzian without cohesion
-WARNING: 
-	The contact model you specified is not located in any whitelist.
-	Because of this the model will be run in an unoptimized version (increasing runtime by up to 20%%).
-	In order to optimize this model you have the following options:
-		(i)  Run the genAutoExamplesWhitelist.sh script in your LIGGGHTS(R) source folder to automatically parse the input script
-		(ii) Add the model combination by hand to your style_contact_model_user.whitelist that can be found in your LIGGGHTS(R) source folder
-	If you perform one of the steps above LIGGGHTS(R) needs to be recompiled to generate the optimized code.
-
- (../contact_models.h:364)
 pair_coeff	* *
 
 timestep	0.00001
 
 fix xwalls1 all wall/gran model hertz tangential history primitive type 1 xplane -0.05
-WARNING: 
-	The contact model you specified is not located in any whitelist.
-	Because of this the model will be run in an unoptimized version (increasing runtime by up to 20%%).
-	In order to optimize this model you have the following options:
-		(i)  Run the genAutoExamplesWhitelist.sh script in your LIGGGHTS(R) source folder to automatically parse the input script
-		(ii) Add the model combination by hand to your style_contact_model_user.whitelist that can be found in your LIGGGHTS(R) source folder
-	If you perform one of the steps above LIGGGHTS(R) needs to be recompiled to generate the optimized code.
-
- (../contact_models.h:364)
 fix xwalls2 all wall/gran model hertz tangential history primitive type 1 xplane +0.05
-WARNING: 
-	The contact model you specified is not located in any whitelist.
-	Because of this the model will be run in an unoptimized version (increasing runtime by up to 20%%).
-	In order to optimize this model you have the following options:
-		(i)  Run the genAutoExamplesWhitelist.sh script in your LIGGGHTS(R) source folder to automatically parse the input script
-		(ii) Add the model combination by hand to your style_contact_model_user.whitelist that can be found in your LIGGGHTS(R) source folder
-	If you perform one of the steps above LIGGGHTS(R) needs to be recompiled to generate the optimized code.
-
- (../contact_models.h:364)
 fix ywalls1 all wall/gran model hertz tangential history primitive type 1 yplane -0.05
-WARNING: 
-	The contact model you specified is not located in any whitelist.
-	Because of this the model will be run in an unoptimized version (increasing runtime by up to 20%%).
-	In order to optimize this model you have the following options:
-		(i)  Run the genAutoExamplesWhitelist.sh script in your LIGGGHTS(R) source folder to automatically parse the input script
-		(ii) Add the model combination by hand to your style_contact_model_user.whitelist that can be found in your LIGGGHTS(R) source folder
-	If you perform one of the steps above LIGGGHTS(R) needs to be recompiled to generate the optimized code.
-
- (../contact_models.h:364)
 fix ywalls2 all wall/gran model hertz tangential history primitive type 1 yplane +0.05
-WARNING: 
-	The contact model you specified is not located in any whitelist.
-	Because of this the model will be run in an unoptimized version (increasing runtime by up to 20%%).
-	In order to optimize this model you have the following options:
-		(i)  Run the genAutoExamplesWhitelist.sh script in your LIGGGHTS(R) source folder to automatically parse the input script
-		(ii) Add the model combination by hand to your style_contact_model_user.whitelist that can be found in your LIGGGHTS(R) source folder
-	If you perform one of the steps above LIGGGHTS(R) needs to be recompiled to generate the optimized code.
-
- (../contact_models.h:364)
 fix zwalls1 all wall/gran model hertz tangential history primitive type 1 zplane  0.00
-WARNING: 
-	The contact model you specified is not located in any whitelist.
-	Because of this the model will be run in an unoptimized version (increasing runtime by up to 20%%).
-	In order to optimize this model you have the following options:
-		(i)  Run the genAutoExamplesWhitelist.sh script in your LIGGGHTS(R) source folder to automatically parse the input script
-		(ii) Add the model combination by hand to your style_contact_model_user.whitelist that can be found in your LIGGGHTS(R) source folder
-	If you perform one of the steps above LIGGGHTS(R) needs to be recompiled to generate the optimized code.
-
- (../contact_models.h:364)
 fix zwalls2 all wall/gran model hertz tangential history primitive type 1 zplane  0.15
-WARNING: 
-	The contact model you specified is not located in any whitelist.
-	Because of this the model will be run in an unoptimized version (increasing runtime by up to 20%%).
-	In order to optimize this model you have the following options:
-		(i)  Run the genAutoExamplesWhitelist.sh script in your LIGGGHTS(R) source folder to automatically parse the input script
-		(ii) Add the model combination by hand to your style_contact_model_user.whitelist that can be found in your LIGGGHTS(R) source folder
-	If you perform one of the steps above LIGGGHTS(R) needs to be recompiled to generate the optimized code.
-
- (../contact_models.h:364)
 
 
 #distributions for insertion
@@ -136,33 +72,33 @@ thermo_modify	lost ignore norm no
 
 #insert the first particles
 run		1
-Setting up run at Tue Jul 22 18:00:30 2025
+Setting up run at Wed Aug 20 13:52:34 2025
 
 INFO: Particle insertion ins: inserting every 0 steps
-Memory usage per processor = 4.24306 Mbytes
+Memory usage per processor = 5.77204 Mbytes
     Step    Atoms         KinEng              1         Volume 
        0        0              0              0         0.0015 
-INFO: Particle insertion ins: inserted 338 particle templates (mass 9.409175e-01) at step 1
- - a total of 338 particle templates (mass 9.409175e-01) inserted so far.
+INFO: Particle insertion ins: inserted 338 particle templates (mass 9.449701e-01) at step 1
+ - a total of 338 particle templates (mass 9.449701e-01) inserted so far.
        1      338              0              0         0.0015 
-Loop time of 0.00356659 on 2 procs for 1 steps with 338 atoms, finish time Tue Jul 22 18:00:30 2025
+Loop time of 0.00322723 on 4 procs for 1 steps with 338 atoms, finish time Wed Aug 20 13:52:34 2025
 
 
-Pair  time (%) = 3.1095e-06 (0.0871841)
-Neigh time (%) = 8.51145e-05 (2.38644)
-Comm  time (%) = 0.00047232 (13.2429)
-Outpt time (%) = 0.000185419 (5.19879)
-Other time (%) = 0.00282063 (79.0847)
+Pair  time (%) = 1.9315e-06 (0.0598501)
+Neigh time (%) = 0.00010614 (3.28889)
+Comm  time (%) = 7.90398e-05 (2.44915)
+Outpt time (%) = 7.78787e-05 (2.41318)
+Other time (%) = 0.00296224 (91.7889)
 
-Nlocal:    169 ave 170 max 168 min
-Histogram: 1 0 0 0 0 0 0 0 0 1
-Nghost:    36 ave 38 max 34 min
-Histogram: 1 0 0 0 0 0 0 0 0 1
-Neighs:    153.5 ave 165 max 142 min
-Histogram: 1 0 0 0 0 0 0 0 0 1
+Nlocal:    84.5 ave 85 max 84 min
+Histogram: 2 0 0 0 0 0 0 0 0 2
+Nghost:    47.75 ave 50 max 47 min
+Histogram: 3 0 0 0 0 0 0 0 0 1
+Neighs:    84.5 ave 87 max 83 min
+Histogram: 2 0 0 0 0 1 0 0 0 1
 
-Total # of neighbors = 307
-Ave neighs/atom = 0.908284
+Total # of neighbors = 338
+Ave neighs/atom = 1
 Neighbor list builds = 1
 Dangerous builds = 0
 dump		dmp all custom/vtk 350 post/packing_*.vtk id type type x y z ix iy iz vx vy vz fx fy fz omegax omegay omegaz radius
@@ -188,131 +124,131 @@ fix		grow all adapt 40 atom diameter v_dgrown
 #run
 run		${growts}
 run		50000
-Setting up run at Tue Jul 22 18:00:30 2025
+Setting up run at Wed Aug 20 13:52:34 2025
 
-Memory usage per processor = 8.82626 Mbytes
+Memory usage per processor = 10.2788 Mbytes
     Step    Atoms         KinEng              1         Volume 
        1      338              0              0         0.0015 
-    1000      338  8.1538788e-07  5.9242446e-09         0.0015 
-    2000      338  1.6465292e-06  8.4119439e-09         0.0015 
-    3000      338  3.0274883e-06  1.2038926e-07         0.0015 
-    4000      338  4.7524701e-06  2.6541762e-07         0.0015 
-    5000      338  6.5607952e-06  4.8453832e-07         0.0015 
-    6000      338  8.2766868e-06  7.0389906e-07         0.0015 
-    7000      338  1.2707879e-05   1.390563e-06         0.0015 
-    8000      338  1.3620881e-05  1.5311463e-06         0.0015 
-    9000      338  1.7041709e-05  2.2219761e-06         0.0015 
-   10000      338  2.9855098e-05  6.5310938e-06         0.0015 
-   11000      338  3.5821657e-05  8.8352878e-06         0.0015 
-   12000      338  4.3565578e-05   1.104872e-05         0.0015 
-   13000      338  6.7274892e-05  1.7838141e-05         0.0015 
-   14000      338  8.9760788e-05  2.4054948e-05         0.0015 
-   15000      338  0.00013409355  3.9815884e-05         0.0015 
-   16000      338  0.00020870318  6.4880066e-05         0.0015 
-   17000      338  0.00022463253  7.5687847e-05         0.0015 
-   18000      338  0.00025996549  8.9168796e-05         0.0015 
-   19000      338   0.0003588546  0.00011800748         0.0015 
-   20000      338  0.00044037417  0.00016016702         0.0015 
-   21000      338  0.00048237212  0.00018609782         0.0015 
-   22000      338  0.00052102299  0.00019499411         0.0015 
-   23000      338  0.00061428975   0.0002448452         0.0015 
-   24000      338  0.00079836892  0.00035074347         0.0015 
-   25000      338  0.00094638433  0.00051370867         0.0015 
-   26000      338   0.0011955693  0.00062018964         0.0015 
-   27000      338   0.0017386359   0.0010569773         0.0015 
-   28000      338   0.0025580294   0.0017909324         0.0015 
-   29000      338   0.0026558768   0.0016240047         0.0015 
-   30000      338   0.0029388283   0.0019940293         0.0015 
-   31000      338   0.0040848816   0.0030216969         0.0015 
-   32000      338   0.0055008151   0.0039456068         0.0015 
-   33000      338   0.0091161076   0.0058292167         0.0015 
-   34000      338   0.0090884446   0.0074095247         0.0015 
-   35000      338    0.008444267   0.0078867158         0.0015 
-   36000      338   0.0053647318   0.0048604351         0.0015 
-   37000      338   0.0034056387   0.0031593614         0.0015 
-   38000      338   0.0017476123   0.0015196115         0.0015 
-   39000      338   0.0028424734   0.0014721328         0.0015 
-   40000      338   0.0036461947   0.0022384907         0.0015 
-   41000      338   0.0043548737   0.0026199372         0.0015 
-   42000      338   0.0010479302  0.00087043166         0.0015 
-   43000      338   0.0015886771   0.0012317168         0.0015 
-   44000      338  0.00060019985  0.00041129724         0.0015 
-   45000      338  0.00057939319  0.00029140431         0.0015 
-   46000      338  0.00038858147  0.00013590974         0.0015 
-   47000      338  0.00037168824  0.00015343385         0.0015 
-   48000      338    0.018358417    0.010229142         0.0015 
-   49000      338    0.028537878    0.010499018         0.0015 
-   50000      338    0.013117505   0.0070774188         0.0015 
-   50001      338    0.012994737   0.0070349705         0.0015 
-Loop time of 1.26122 on 2 procs for 50000 steps with 338 atoms, finish time Tue Jul 22 18:00:32 2025
+    1000      338  7.5634454e-07  5.8422517e-09         0.0015 
+    2000      338  2.6523253e-06  1.2966749e-07         0.0015 
+    3000      338  6.5101292e-06  7.5046231e-07         0.0015 
+    4000      338  8.6253359e-06  9.5252064e-07         0.0015 
+    5000      338  1.4658649e-05  2.0274639e-06         0.0015 
+    6000      338    1.82735e-05  3.0817378e-06         0.0015 
+    7000      338  2.0855248e-05  3.8493423e-06         0.0015 
+    8000      338  2.9399821e-05  5.5953199e-06         0.0015 
+    9000      338  3.7150856e-05  8.4360502e-06         0.0015 
+   10000      338  4.4568817e-05  1.0422078e-05         0.0015 
+   11000      338  4.8168433e-05  1.3359938e-05         0.0015 
+   12000      338  5.2684953e-05   1.448496e-05         0.0015 
+   13000      338  6.2098171e-05   1.807426e-05         0.0015 
+   14000      338  8.1787059e-05   2.491482e-05         0.0015 
+   15000      338  0.00010018507  2.8449664e-05         0.0015 
+   16000      338  0.00015324872  4.2465751e-05         0.0015 
+   17000      338  0.00018788899  6.1033925e-05         0.0015 
+   18000      338  0.00021748723  8.3055271e-05         0.0015 
+   19000      338  0.00028500078  0.00012106803         0.0015 
+   20000      338  0.00031633911  0.00016854007         0.0015 
+   21000      338  0.00035354857  0.00017779414         0.0015 
+   22000      338  0.00050631892  0.00025487128         0.0015 
+   23000      338  0.00067431994  0.00034800014         0.0015 
+   24000      338  0.00075188508   0.0003886364         0.0015 
+   25000      338  0.00099240321  0.00054826041         0.0015 
+   26000      338   0.0010938145  0.00072688758         0.0015 
+   27000      338   0.0013494606   0.0010144697         0.0015 
+   28000      338   0.0018436396   0.0012505766         0.0015 
+   29000      338   0.0020298596   0.0014248912         0.0015 
+   30000      338    0.002794369   0.0020995254         0.0015 
+   31000      338   0.0037668488    0.003052335         0.0015 
+   32000      338   0.0048755443    0.004880809         0.0015 
+   33000      338   0.0066049493   0.0055910389         0.0015 
+   34000      338   0.0057035989   0.0047133041         0.0015 
+   35000      338    0.003818403   0.0039124232         0.0015 
+   36000      338   0.0041931121   0.0041816021         0.0015 
+   37000      338   0.0039096248   0.0031289915         0.0015 
+   38000      338   0.0018854225   0.0019610187         0.0015 
+   39000      338   0.0020626408   0.0015288769         0.0015 
+   40000      338   0.0032212287    0.001519365         0.0015 
+   41000      338   0.0025166475   0.0017486756         0.0015 
+   42000      338   0.0058203194   0.0023645726         0.0015 
+   43000      338   0.0027303572   0.0015272272         0.0015 
+   44000      338    0.008072649   0.0023175132         0.0015 
+   45000      338    0.010339853   0.0016815448         0.0015 
+   46000      338   0.0083120949   0.0016306777         0.0015 
+   47000      338    0.022063864   0.0038898274         0.0015 
+   48000      338    0.011338037   0.0061864543         0.0015 
+   49000      338    0.019231947   0.0052683683         0.0015 
+   50000      338    0.020398985   0.0024756068         0.0015 
+   50001      338    0.020611836   0.0025010215         0.0015 
+Loop time of 1.22203 on 4 procs for 50000 steps with 338 atoms, finish time Wed Aug 20 13:52:35 2025
 
 
-Pair  time (%) = 0.465755 (36.9289)
-Neigh time (%) = 0.0044948 (0.356385)
-Comm  time (%) = 0.151555 (12.0165)
-Outpt time (%) = 0.232829 (18.4606)
-Other time (%) = 0.406587 (32.2375)
+Pair  time (%) = 0.213934 (17.5065)
+Neigh time (%) = 0.00291758 (0.238749)
+Comm  time (%) = 0.169496 (13.8701)
+Outpt time (%) = 0.208179 (17.0355)
+Other time (%) = 0.627502 (51.3492)
 
-Nlocal:    169 ave 170 max 168 min
-Histogram: 1 0 0 0 0 0 0 0 0 1
-Nghost:    45.5 ave 47 max 44 min
-Histogram: 1 0 0 0 0 0 0 0 0 1
-Neighs:    601 ave 606 max 596 min
-Histogram: 1 0 0 0 0 0 0 0 0 1
+Nlocal:    84.5 ave 85 max 84 min
+Histogram: 2 0 0 0 0 0 0 0 0 2
+Nghost:    62.75 ave 67 max 57 min
+Histogram: 1 0 0 0 0 1 0 0 1 1
+Neighs:    319 ave 338 max 303 min
+Histogram: 2 0 0 0 0 0 0 0 1 1
 
-Total # of neighbors = 1202
-Ave neighs/atom = 3.55621
-Neighbor list builds = 65
+Total # of neighbors = 1276
+Ave neighs/atom = 3.77515
+Neighbor list builds = 90
 Dangerous builds = 0
 
 #let the packing relax
 unfix	grow
 run		${relaxts}
 run		20000
-Setting up run at Tue Jul 22 18:00:32 2025
+Setting up run at Wed Aug 20 13:52:35 2025
 
-Memory usage per processor = 8.92767 Mbytes
+Memory usage per processor = 10.3674 Mbytes
     Step    Atoms         KinEng              1         Volume 
-   50001      338    0.012994737   0.0070349705         0.0015 
-   51000      338  0.00012857004  5.1561638e-05         0.0015 
-   52000      338  2.3348113e-05  1.3452015e-05         0.0015 
-   53000      338  5.6441049e-06  9.3456414e-06         0.0015 
-   54000      338  5.9451294e-06   8.839233e-06         0.0015 
-   55000      338  4.6597377e-06  8.0605349e-06         0.0015 
-   56000      338  3.3997856e-06  7.4102778e-06         0.0015 
-   57000      338  3.2954178e-06  7.3782024e-06         0.0015 
-   58000      338  3.2988334e-06  7.3769737e-06         0.0015 
-   59000      338  3.2970145e-06  7.3770729e-06         0.0015 
-   60000      338  1.4434326e-06  1.5297252e-06         0.0015 
-   61000      338  1.4410303e-06  1.5280487e-06         0.0015 
-   62000      338  1.4408891e-06  1.5279468e-06         0.0015 
-   63000      338  1.4225026e-06  1.2459394e-06         0.0015 
-   64000      338  1.4169217e-06  9.4563069e-07         0.0015 
-   65000      338  1.4160881e-06  9.4414543e-07         0.0015 
-   66000      338  1.3426896e-06  9.3651711e-07         0.0015 
-   67000      338  1.1906912e-06  9.7475715e-07         0.0015 
-   68000      338  1.1906882e-06  9.7474636e-07         0.0015 
-   69000      338  1.1425042e-06  9.8971414e-07         0.0015 
-   70000      338  1.1399687e-06  9.9124104e-07         0.0015 
-   70001      338  1.1399686e-06  9.9124104e-07         0.0015 
-Loop time of 0.749906 on 2 procs for 20000 steps with 338 atoms, finish time Tue Jul 22 18:00:32 2025
+   50001      338    0.020611836   0.0025010215         0.0015 
+   51000      338  6.0936419e-05  5.0078849e-05         0.0015 
+   52000      338  1.7157327e-05  3.4662844e-05         0.0015 
+   53000      338  1.1472389e-05  2.8199004e-05         0.0015 
+   54000      338  7.7285792e-06   2.739113e-05         0.0015 
+   55000      338  7.5571275e-06  2.7323698e-05         0.0015 
+   56000      338  6.4882607e-06   2.689088e-05         0.0015 
+   57000      338  6.4808404e-06  2.6890577e-05         0.0015 
+   58000      338  6.4796188e-06  2.6890342e-05         0.0015 
+   59000      338  6.4791068e-06   2.689028e-05         0.0015 
+   60000      338   6.478934e-06  2.6890274e-05         0.0015 
+   61000      338  6.4001409e-06  2.6863609e-05         0.0015 
+   62000      338  6.4001253e-06  2.6863639e-05         0.0015 
+   63000      338  5.1398718e-06  2.6714255e-05         0.0015 
+   64000      338  5.2352379e-06  2.6623532e-05         0.0015 
+   65000      338  5.2343275e-06  2.6623277e-05         0.0015 
+   66000      338  3.9010155e-06  2.5737114e-05         0.0015 
+   67000      338  3.3534432e-06  1.9927878e-05         0.0015 
+   68000      338   3.334018e-06  1.9663045e-05         0.0015 
+   69000      338  3.3333295e-06  1.9661331e-05         0.0015 
+   70000      338  2.6891231e-06  1.8781505e-05         0.0015 
+   70001      338  2.6891116e-06    1.87815e-05         0.0015 
+Loop time of 0.591133 on 4 procs for 20000 steps with 338 atoms, finish time Wed Aug 20 13:52:36 2025
 
 
-Pair  time (%) = 0.396381 (52.8573)
-Neigh time (%) = 0.000544306 (0.0725832)
-Comm  time (%) = 0.0386012 (5.14747)
-Outpt time (%) = 0.0992102 (13.2297)
-Other time (%) = 0.21517 (28.6929)
+Pair  time (%) = 0.172448 (29.1724)
+Neigh time (%) = 0.000232029 (0.0392515)
+Comm  time (%) = 0.0637206 (10.7794)
+Outpt time (%) = 0.0839103 (14.1948)
+Other time (%) = 0.270823 (45.8141)
 
-Nlocal:    169 ave 171 max 167 min
-Histogram: 1 0 0 0 0 0 0 0 0 1
-Nghost:    49.5 ave 50 max 49 min
-Histogram: 1 0 0 0 0 0 0 0 0 1
-Neighs:    605.5 ave 606 max 605 min
-Histogram: 1 0 0 0 0 0 0 0 0 1
+Nlocal:    84.5 ave 85 max 84 min
+Histogram: 2 0 0 0 0 0 0 0 0 2
+Nghost:    73 ave 76 max 66 min
+Histogram: 1 0 0 0 0 0 0 0 1 2
+Neighs:    325 ave 343 max 309 min
+Histogram: 2 0 0 0 0 0 0 0 1 1
 
-Total # of neighbors = 1211
-Ave neighs/atom = 3.58284
+Total # of neighbors = 1300
+Ave neighs/atom = 3.84615
 Neighbor list builds = 5
 Dangerous builds = 0
 

@@ -60,8 +60,6 @@
 #include <vtkMPI.h>
 #include <vtkMPICommunicator.h>
 
-#include <vtkVersionMacros.h>
-
 using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */

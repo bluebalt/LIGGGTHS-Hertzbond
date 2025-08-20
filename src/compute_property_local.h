@@ -95,7 +95,21 @@ class ComputePropertyLocal : public Compute {
 
   void pack_batom1(int);
   void pack_batom2(int);
+  void pack_batom1x(int);
+  void pack_batom1y(int);
+  void pack_batom1z(int);
+  void pack_batom2x(int);
+  void pack_batom2y(int);
+  void pack_batom2z(int);
+  void pack_bforceX(int);
+  void pack_bforceY(int);
+  void pack_bforceZ(int);
+  void pack_btorqueX(int);
+  void pack_btorqueY(int);
+  void pack_btorqueZ(int);
+  void pack_beqdist(int);
   void pack_btype(int);
+  void pack_bondbroken(int);
 
   void pack_aatom1(int);
   void pack_aatom2(int);

@@ -7,8 +7,6 @@
 # The present file DOES apply the multicontact model.
 #
 
-shell mkdir -p post
-
 atom_style	sphere
 atom_modify	map array
 boundary	f f f

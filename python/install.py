@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# copy LIGGGHTS src/libliggghts.so and liggghts.py to system dirs
+# copy LAMMPS src/libliggghts.so and liggghts.py to system dirs
 
 instructions = """
 Syntax: python install.py [-h] [libdir] [pydir]
@@ -8,11 +8,13 @@ Syntax: python install.py [-h] [libdir] [pydir]
         pydir = target dir for liggghts.py, default = Python site-packages dir
 """
 
-import sys,os # ,commands
-if sys.version_info[0] == 3:
-  import subprocess as commands
-else:
+import sys,os
+
+if sys.version_info[0] == 2:
   import commands
+else:
+  import subprocess as commands
+  
 
 if (len(sys.argv) > 1 and sys.argv[1] == "-h") or len(sys.argv) > 3:
   print(instructions)

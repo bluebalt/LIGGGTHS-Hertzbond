@@ -125,7 +125,6 @@ void lammps_file(void *ptr, const char *str)
 /* ----------------------------------------------------------------------
    process a single input command in str
 ------------------------------------------------------------------------- */
-
 char *lammps_command(void *ptr, const char *str)
 {
   LAMMPS *lmp = (LAMMPS *) ptr;
@@ -234,7 +233,6 @@ void *lammps_extract_atom(void *ptr, const char *name)
 void *lammps_extract_compute(void *ptr, const char *id, int style, int type)
 {
   LAMMPS *lmp = (LAMMPS *) ptr;
-
   int icompute = lmp->modify->find_compute(id);
   if (icompute < 0) return NULL;
   Compute *compute = lmp->modify->compute[icompute];

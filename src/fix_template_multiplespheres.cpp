@@ -96,12 +96,17 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
   r_sphere = new double[nspheres];
   atom_type_sphere = 0;
 
-  // re-create pti with correct nspheres
+  // re-create pti with correct nspheres (Not part of PFM)
   delete pti;
   pti = new ParticleToInsert(lmp,nspheres);
 
   bonded = false;
-  fix_bond_random_id = 0;
+  bond_type = 1;
+
+  // number of partners and partner array
+  np = NULL;
+  p = NULL;
+  fix_bond_random_id = NULL;
 
   for (int i = 0; i < 3; i++) {
       x_min[i] = LARGE;
@@ -209,16 +214,81 @@ FixTemplateMultiplespheres::FixTemplateMultiplespheres(LAMMPS *lmp, int narg, ch
     {
         if (narg < iarg+2)
             error->fix_error(FLERR,this,"not enough arguments for 'bonded'");
-        if(0 == strcmp(arg[iarg+1],"yes"))
+
+        ++iarg;
+        // Note: Implicitly creates the bonds between the atoms based on the neighbour list and a bonding distance
+        if(strcmp(arg[iarg],"yes") == 0 || strcmp(arg[iarg],"yes/implicit") == 0)
+        {
+            ++iarg;
             bonded = true;
-        else if(0 == strcmp(arg[iarg+1],"no"))
+        }
+        // Note: Explicitly creates bonds between the atoms without using any bonding distance equation and neighbor lists.
+        //       This bonding scheme has been implemented for the specific application. User-defined partner list is required
+        //       for creating the bonds.
+        else if(strcmp(arg[iarg],"yes/explicit") == 0)
+        {
+            if(narg<iarg+2)
+                error->fix_error(FLERR,this,"Partner list is required for explicit bonds!");
+
+            ++iarg;
+            if(strcmp(arg[iarg],"nbond_pairs") == 0)
+            {
+                ++iarg;
+                int nbond_pairs = atoi(arg[iarg]);
+
+                if (narg < iarg + 2*nbond_pairs + 1)
+                {
+                    error->fix_error(FLERR,this,"not enough arguments: define the partner list here!");
+                }
+                else
+                {
+                    ++iarg;
+                    // number of partners and partner array
+                    np = new int[nspheres]();
+                    p = new int*[nspheres];
+                    for(int i=0; i<nspheres; ++i)
+                        p[i] = new int[nspheres-1]();
+
+                    for(int i = 0; i < nbond_pairs; ++i)
+                    {
+                        int ipartner = atoi(arg[iarg++])-1;
+                        int jpartner = atoi(arg[iarg++])-1;
+                        {
+                            p[ipartner][np[ipartner]] = jpartner;
+                            p[jpartner][np[jpartner]] = ipartner;
+
+                            np[ipartner]++;
+                            np[jpartner]++;
+                        }
+                    }
+                }
+                bonded = true;
+            }
+        }
+        //Note: This switch can be used to create a multiplesphere particle without any bonds.
+        else if(strcmp(arg[iarg],"no") == 0)
+        {
+            ++iarg;
             bonded = false;
+        }
         else
-            error->fix_error(FLERR,this,"expecting 'yes' or 'no' after 'bonded'");
-        iarg+=2;
+        {
+            error->fix_error(FLERR,this,"expecting 'yes/implicit' or 'yes/explicit' or 'no' after 'bonded'");
+        }
+        hasargs = true;
     }
-    else if(strcmp(style,"particletemplate/multiplespheres") == 0)
-        error->fix_error(FLERR,this,"unknown keyword");
+    else if (strcmp(arg[iarg],"bond_type") == 0) {
+        if (narg < iarg+2) error->fix_error(FLERR, this, "not enough arguments for option 'bond_type'");
+        bond_type = atoi(arg[iarg+1]);
+        if (bond_type < 1 || bond_type > atom->nbondtypes) error->fix_error(FLERR, this, "'bond_type' value must be > 0 and <= number of bond types");
+        iarg += 2;
+        hasargs = true;
+    }
+    else if(strcmp(style,"particletemplate/multiplespheres") == 0) {
+        char err_msg[50];
+        sprintf(err_msg, "unknown keyword: %s", arg[iarg]);
+        error->fix_error(FLERR,this,err_msg);
+    }
   }
 
   if(!spheres_read) error->fix_error(FLERR,this,"need to define spheres for the template");
@@ -237,6 +307,14 @@ FixTemplateMultiplespheres::~FixTemplateMultiplespheres()
     memory->destroy(x_sphere);
     delete []r_sphere;
     if(atom_type_sphere) delete []atom_type_sphere;
+
+    if (p)
+    {
+        for(int i = 0; i < nspheres; ++i)
+            delete [] p[i];
+        delete [] p;
+        delete [] np;
+    }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -321,65 +399,62 @@ int FixTemplateMultiplespheres::mintype()
 
 void FixTemplateMultiplespheres::calc_bounding_sphere()
 {
-  r_bound = LARGE;
-  int *visited = new int[nspheres];
-  double d[3],dist;
+    r_bound = LARGE;
+    int *visited = new int[nspheres];
+    double d[3];
+    double dist;
 
-  for(int shuffle = 0; shuffle < N_SHUFFLE_BOUND; shuffle ++)
-  {
-      for(int i = 0; i < nspheres; i++) visited[i] = 0;
+    for(int shuffle = 0; shuffle < N_SHUFFLE_BOUND; shuffle++) {
+        for(int i = 0; i < nspheres; i++) visited[i] = 0;
 
-      int isphere = -1;
-      int nvisited = 0;
-      double x_bound_temp[3],rbound_temp;
+        int isphere = -1;
+        int nvisited = 0;
+        double x_bound_temp[3];
+        double rbound_temp;
 
-      while(isphere < 0 || visited[isphere] || isphere >= nspheres )
-          isphere = static_cast<int>(random_mc->uniform()*nspheres);
+        while(isphere < 0 || visited[isphere] || isphere >= nspheres)
+            isphere = static_cast<int>(random_mc->uniform()*nspheres);
 
-      nvisited++;
-      visited[isphere] = 1;
+        nvisited++;
+        visited[isphere] = 1;
 
-      vectorCopy3D(x_sphere[isphere],x_bound_temp);
-      rbound_temp = r_sphere[isphere];
+        vectorCopy3D(x_sphere[isphere],x_bound_temp);
+        rbound_temp = r_sphere[isphere];
 
-      while(nvisited < nspheres)
-      {
-          while(isphere < 0 || visited[isphere] || isphere >= nspheres )
-               isphere = static_cast<int>(random_mc->uniform()*nspheres);
+        while(nvisited < nspheres) {
+            while(isphere < 0 || visited[isphere] || isphere >= nspheres )
+                isphere = static_cast<int>(random_mc->uniform()*nspheres);
 
-          nvisited++;
-          visited[isphere] = 1;
+            nvisited++;
+            visited[isphere] = 1;
 
-          vectorSubtract3D(x_sphere[isphere],x_bound_temp,d);
-          dist = vectorMag3D(d);
+            vectorSubtract3D(x_sphere[isphere],x_bound_temp,d);
+            dist = vectorMag3D(d);
 
-          // do nothing if sphere is completely contained in bounding sphere
-          // if not contained, shift and extend bounding sphere
-          if(dist + r_sphere[isphere] > rbound_temp)
-          {
-              double fact = (dist + r_sphere[isphere] - rbound_temp) / (2. * dist);
-              vectorScalarMult3D(d,fact);
-              vectorAdd3D(x_bound_temp,d,x_bound_temp);
-              rbound_temp += vectorMag3D(d);
-          }
-          
-      }
-      if(rbound_temp < r_bound)
-      {
-          r_bound = rbound_temp;
-          vectorCopy3D(x_bound_temp,x_bound);
-      }
-      
-  }
-  delete []visited;
+            // do nothing if sphere is completely contained in bounding sphere
+            // if not contained, shift and extend bounding sphere
+            if(dist + r_sphere[isphere] > rbound_temp) {
+                const double fact = (dist + r_sphere[isphere] - rbound_temp) / (2. * dist);
+                vectorScalarMult3D(d,fact);
+                vectorAdd3D(x_bound_temp,d,x_bound_temp);
+                rbound_temp += vectorMag3D(d);
+            }
+            
+        }
+        if(rbound_temp < r_bound) {
+            r_bound = rbound_temp;
+            vectorCopy3D(x_bound_temp,x_bound);
+        }
+        
+    }
+    delete []visited;
 
-  // do a coarse check on the validity of the bounding sphere calc
-  for(int i = 0; i < nspheres; i++)
-  {
-      double temp[3];
-      vectorSubtract3D(x_bound,x_sphere[i],temp);
-      if(vectorMag3D(temp) > r_bound) error->fix_error(FLERR,this,"Bounding sphere calculation for template failed");
-  }
+    // do a coarse check on the validity of the bounding sphere calc
+    for(int i = 0; i < nspheres; i++) {
+        double temp[3];
+        vectorSubtract3D(x_bound,x_sphere[i],temp);
+        if(vectorMag3D(temp) > r_bound) error->fix_error(FLERR,this,"Bounding sphere calculation for template failed");
+    }
 
 }
 
@@ -390,8 +465,8 @@ void FixTemplateMultiplespheres::calc_bounding_sphere()
 void FixTemplateMultiplespheres::check_overlap()
 {
     
-    double overlap_slightly_min = 1.0000001;
-    double overlap_slightly_max = 1.01;
+    const double overlap_slightly_min = 1.0000001;
+    const double overlap_slightly_max = 1.01;
 
     overlap_slightly = true;
     no_overlap = true;
@@ -400,10 +475,8 @@ void FixTemplateMultiplespheres::check_overlap()
     bool *overlap_slightly_vec = new bool[nspheres];
     vectorInitializeN(overlap_slightly_vec,nspheres,false);
 
-    for(int i = 0; i < nspheres; i++)
-    {
-        for(int j = i+1; j < nspheres; j++)
-        {
+    for(int i = 0; i < nspheres; i++) {
+        for(int j = i+1; j < nspheres; j++) {
             dist = pointDistance(x_sphere[i],x_sphere[j]);
 
             if(dist < (r_sphere[i] + r_sphere[j]))
@@ -411,8 +484,7 @@ void FixTemplateMultiplespheres::check_overlap()
 
             if( (dist > overlap_slightly_min*(r_sphere[i] + r_sphere[j])) &&
                 (dist < overlap_slightly_max*(r_sphere[i] + r_sphere[j]))
-              )
-            {
+              ) {
                 overlap_slightly_vec[i] = true;
                 overlap_slightly_vec[j] = true;
             }
@@ -457,49 +529,48 @@ void FixTemplateMultiplespheres::generate_xtry(double *x_try)
 
 void FixTemplateMultiplespheres::calc_center_of_mass()
 {
-  // mc integration, calc volume and com, mass weight
-  int nsuccess = 0;
+    // mc integration, calc volume and com, mass weight
+    int nsuccess = 0;
 
-  double x_try[3],xcm[3],dist_j_sqr;
+    double x_try[3];
+    double xcm[3];
+    double dist_j_sqr;
 
-  vectorZeroize3D(xcm);
+    vectorZeroize3D(xcm);
 
-  bool alreadyChecked = false;
-  for(int i = 0; i < ntry; i++)
-  {
-      generate_xtry(x_try);
+    bool alreadyChecked = false;
+    for(int i = 0; i < ntry; i++) {
+        generate_xtry(x_try);
 
-      alreadyChecked = false;
-      for(int j = 0; j < nspheres; j++)
-      {
-          dist_j_sqr = dist_sqr(j,x_try);
+        alreadyChecked = false;
+        for(int j = 0; j < nspheres; j++) {
+            dist_j_sqr = dist_sqr(j,x_try);
 
-          // only count once if contained in multiple spheres
-          if (alreadyChecked) break;
-          if(dist_j_sqr < r_sphere[j]*r_sphere[j])
-          {
-              xcm[0] = (xcm[0]*static_cast<double>(nsuccess)+x_try[0])/static_cast<double>(nsuccess+1);
-              xcm[1] = (xcm[1]*static_cast<double>(nsuccess)+x_try[1])/static_cast<double>(nsuccess+1);
-              xcm[2] = (xcm[2]*static_cast<double>(nsuccess)+x_try[2])/static_cast<double>(nsuccess+1);
-              nsuccess++;
-              alreadyChecked = true;
-          }
-      }
-  }
+            // only count once if contained in multiple spheres
+            if (alreadyChecked) break;
+            if(dist_j_sqr < r_sphere[j]*r_sphere[j]) {
+                xcm[0] = (xcm[0]*static_cast<double>(nsuccess)+x_try[0])/static_cast<double>(nsuccess+1);
+                xcm[1] = (xcm[1]*static_cast<double>(nsuccess)+x_try[1])/static_cast<double>(nsuccess+1);
+                xcm[2] = (xcm[2]*static_cast<double>(nsuccess)+x_try[2])/static_cast<double>(nsuccess+1);
+                nsuccess++;
+                alreadyChecked = true;
+            }
+        }
+    }
 
-  // expectancy values
-  volume_expect = static_cast<double>(nsuccess)/static_cast<double>(ntry)*(x_max[0]-x_min[0])*(x_max[1]-x_min[1])*(x_max[2]-x_min[2]);
-  mass_expect = volume_expect*expectancy(pdf_density);
-  r_equiv = pow(6.*mass_expect/(8.*expectancy(pdf_density)*M_PI),1./3.);
+    // expectancy values
+    volume_expect = static_cast<double>(nsuccess)/static_cast<double>(ntry)*(x_max[0]-x_min[0])*(x_max[1]-x_min[1])*(x_max[2]-x_min[2]);
+    mass_expect = volume_expect*expectancy(pdf_density);
+    // r_equiv = pow(6.*mass_expect/(8.*expectancy(pdf_density)*M_PI),1./3.);
+    r_equiv = cbrt(6.0*mass_expect/(8.0*expectancy(pdf_density)*M_PI));
+    // transform into a system with center of mass=0/0/0
 
-  // transform into a system with center of mass=0/0/0
+    for(int i = 0; i < nspheres; i++)
+        vectorSubtract3D(x_sphere[i],xcm,x_sphere[i]);
 
-  for(int i = 0; i < nspheres; i++)
-    vectorSubtract3D(x_sphere[i],xcm,x_sphere[i]);
-
-  vectorSubtract3D(x_min,xcm,x_min);
-  vectorSubtract3D(x_max,xcm,x_max);
-  vectorSubtract3D(x_bound,xcm,x_bound);
+    vectorSubtract3D(x_min,xcm,x_min);
+    vectorSubtract3D(x_max,xcm,x_max);
+    vectorSubtract3D(x_bound,xcm,x_bound);
 
 }
 
@@ -545,30 +616,27 @@ int FixTemplateMultiplespheres::number_spheres()
 
 void FixTemplateMultiplespheres::randomize_single()
 {
-  
-  pti->nparticles = nspheres;
-  pti->density_ins = expectancy(pdf_density);
-  pti->volume_ins = volume_expect;
-  pti->mass_ins = mass_expect;
-  pti->r_bound_ins = r_bound;
-  vectorCopy3D(x_bound,pti->x_bound_ins);
-  pti->atom_type = atom_type;
-  if(atom_type_sphere)
-  {
-    vectorCopyN(atom_type_sphere,pti->atom_type_vector,nspheres);
-    pti->atom_type_vector_flag = true;
-  }
+    pti->nparticles = nspheres;
+    pti->density_ins = expectancy(pdf_density);
+    pti->volume_ins = volume_expect;
+    pti->mass_ins = mass_expect;
+    pti->r_bound_ins = r_bound;
+    vectorCopy3D(x_bound,pti->x_bound_ins);
+    pti->atom_type = atom_type;
+    if(atom_type_sphere) {
+        vectorCopyN(atom_type_sphere,pti->atom_type_vector,nspheres);
+        pti->atom_type_vector_flag = true;
+    }
 
-  for(int j = 0; j < nspheres; j++)
-  {
-      pti->radius_ins[j] = r_sphere[j];
-      vectorCopy3D(x_sphere[j],pti->x_ins[j]);
-  }
+    for(int j = 0; j < nspheres; j++) {
+        pti->radius_ins[j] = r_sphere[j];
+        vectorCopy3D(x_sphere[j],pti->x_ins[j]);
+    }
 
-  vectorZeroize3D(pti->v_ins);
-  vectorZeroize3D(pti->omega_ins);
+    vectorZeroize3D(pti->v_ins);
+    vectorZeroize3D(pti->omega_ins);
 
-  pti->groupbit = groupbit;
+    pti->groupbit = groupbit;
 }
 
 /* ----------------------------------------------------------------------*/
@@ -587,39 +655,34 @@ void FixTemplateMultiplespheres::init_ptilist(int n_random_max, const bool enfor
 void FixTemplateMultiplespheres::randomize_ptilist(int n_random,int distribution_groupbit,int distorder)
 {
     
-    for(int i = 0; i < n_random; i++)
-    {
-          ParticleToInsert *pti = pti_list[i];
+    for(int i = 0; i < n_random; i++) {
+        ParticleToInsert *pti = pti_list[i];
 
-          pti->density_ins = expectancy(pdf_density);
-          pti->volume_ins = volume_expect;
-          pti->mass_ins = mass_expect;
-          pti->r_bound_ins = r_bound;
-          vectorCopy3D(x_bound,pti->x_bound_ins);
-          pti->atom_type = atom_type;
-          if(atom_type_sphere)
-          {
+        pti->density_ins = expectancy(pdf_density);
+        pti->volume_ins = volume_expect;
+        pti->mass_ins = mass_expect;
+        pti->r_bound_ins = r_bound;
+        vectorCopy3D(x_bound,pti->x_bound_ins);
+        pti->atom_type = atom_type;
+        if(atom_type_sphere) {
             vectorCopyN(atom_type_sphere,pti->atom_type_vector,nspheres);
             pti->atom_type_vector_flag = true;
-          }
+        }
 
-          for(int j = 0; j < nspheres; j++)
-          {
-              pti->radius_ins[j] = r_sphere[j];
-              vectorCopy3D(x_sphere[j],pti->x_ins[j]);
-          }
+        for(int j = 0; j < nspheres; j++) {
+            pti->radius_ins[j] = r_sphere[j];
+            vectorCopy3D(x_sphere[j],pti->x_ins[j]);
+        }
 
-          vectorZeroize3D(pti->v_ins);
-          vectorZeroize3D(pti->omega_ins);
+        vectorZeroize3D(pti->v_ins);
+        vectorZeroize3D(pti->omega_ins);
 
-          pti->groupbit = groupbit | distribution_groupbit; 
+        pti->groupbit = groupbit | distribution_groupbit; 
 
-          pti_list[i]->distorder = distorder;
+        pti_list[i]->distorder = distorder;
 
-          if(bonded)
-          {
-            if (!pti_list[i]->fix_property)
-            {
+        if(bonded) {
+            if (!pti_list[i]->fix_property) {
                 pti_list[i]->fix_property = new FixPropertyAtom*[1];
                 if (pti_list[i]->fix_property_value)
                     error->one(FLERR, "Internal error (fix property pti list)");
@@ -630,11 +693,12 @@ void FixTemplateMultiplespheres::randomize_ptilist(int n_random,int distribution
                 pti_list[i]->fix_property_nentry = new int[1];
             }
             pti_list[i]->fix_property[0] = fix_bond_random_id;
-            
+        
             pti_list[i]->fix_property_value[0][0] = static_cast<double>(update->ntimestep)+random_insertion->uniform();
             pti_list[i]->n_fix_property = 1;
             pti_list[i]->fix_property_nentry[0] = 1;
-          }
+            pti_list[i]->bond_type = bond_type;
+        }
     }
 }
 
@@ -655,19 +719,16 @@ void FixTemplateMultiplespheres::direct_set_ptlist(const int i, const void * con
     // set fix_property_atom
     if (pti_list[i]->fix_property && ms->n_fix_properties() != (unsigned int)pti_list[i]->n_fix_property)
         error->one(FLERR, "Inconsistent fix_property count");
-    if (pti_list[i]->fix_property_value)
-    {
+    if (pti_list[i]->fix_property_value) {
         if (!pti_list[i]->fix_property_nentry)
             error->one(FLERR, "Nentry not available");
-        for (int j = 0; j < pti_list[i]->n_fix_property; j++)
-        {
+        for (int j = 0; j < pti_list[i]->n_fix_property; j++) {
             if (ms->fix_property_nentries(j) != (unsigned int)pti_list[i]->fix_property_nentry[j])
                 error->one(FLERR, "Inconsistent fix property entries");
         }
     }
 
-    if (ms->n_fix_properties() > 0)
-    {
+    if (ms->n_fix_properties() > 0) {
         const int n = ms->n_fix_properties();
         pti_list[i]->n_fix_property = n;
         if (!pti_list[i]->fix_property)
@@ -678,8 +739,7 @@ void FixTemplateMultiplespheres::direct_set_ptlist(const int i, const void * con
         if (!pti_list[i]->fix_property_nentry)
             pti_list[i]->fix_property_nentry = new int[n];
         bool found_bonded = false;
-        for (int j = 0; j < n; j++)
-        {
+        for (int j = 0; j < n; j++) {
             pti_list[i]->fix_property[j] = ms->get_fix_property(j);
             const int m = ms->fix_property_nentries(j);
             if (create_fpv)
@@ -687,10 +747,8 @@ void FixTemplateMultiplespheres::direct_set_ptlist(const int i, const void * con
             pti_list[i]->fix_property_nentry[j] = m;
             for (int k = 0; k < m; k++)
                 pti_list[i]->fix_property_value[j][k] = ms->fix_property_value(j, k);
-            if (pti_list[i]->fix_property[j] == fix_bond_random_id)
-            {
+            if (pti_list[i]->fix_property[j] == fix_bond_random_id) {
                 found_bonded = true;
-                
                 pti_list[i]->fix_property_value[j][0] += static_cast<double>(update->ntimestep);
             }
         }
@@ -715,19 +773,43 @@ unsigned int FixTemplateMultiplespheres::generate_hash()
 {
     unsigned int hash = 0;
     unsigned int start = seed_orig*123457; // it's magic
-    if (atom_type_sphere)
-    {
+    if (atom_type_sphere) {
         for (int i = 0; i < nspheres; i++)
             add_hash_value(atom_type_sphere[i], start, hash);
     }
     else
         add_hash_value(atom_type, start, hash);
+    
     add_hash_value(nspheres, start, hash);
     for (int i = 0; i < nspheres; i++)
         add_hash_value(r_sphere[i], start, hash);
+    
     add_hash_value(pdf_density->rand_style(), start, hash);
     add_hash_value(expectancy(pdf_density), start, hash);
     add_hash_value(cubic_expectancy(pdf_density), start, hash);
     add_hash_value(bonded ? 1 : 0, start, hash);
     return hash;
+}
+
+/* ----------------------------------------------------------------------*/
+
+void FixTemplateMultiplespheres::finalize_insertion()
+{
+    if(bonded) {
+        // check each pti since we don't know which of them have actually been inserted
+        for(int i = 0; i < n_pti_max; ++i) {
+            ParticleToInsert *pti = pti_list[i];
+            // only need to create bonds if fix_property is fix_bond_random_id
+            if(pti->fix_property && pti->fix_property[0] == fix_bond_random_id) {
+                // only need to create bonds for pti created this time step
+                // timestep is integer part of fix_property_value
+                // Note: it's possble that not each pti gets inserted, the pti itself
+                //       does the final check if bond creation is necessary
+                bigint insertionstep = static_cast<bigint>(pti->fix_property_value[0][0]);
+                if(insertionstep == update->ntimestep) {
+                    pti->create_bonds(np, p);
+                }
+            }
+        }
+    }
 }
